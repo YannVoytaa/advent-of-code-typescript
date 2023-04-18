@@ -72,13 +72,9 @@ const parseInput = (input: string) => {
 const simulateActions = (state: string[][], actions: ActionList) => {
   const modifyState = (state: string[][], action: Action) => {
     const { how_many, from, to } = action;
-    for (let i = 0; i < how_many; i++) {
-      const removed = state[from].shift();
-      if (!removed) {
-        throw new Error("Action not allowed, trying to move too many items");
-      }
-      state[to].unshift(removed);
-    }
+    const removed = state[from].slice(0, how_many);
+    state[from] = state[from].slice(how_many);
+    state[to] = removed.concat(state[to]);
     return state;
   };
   for (const action of actions) {
