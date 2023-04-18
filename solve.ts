@@ -34,8 +34,8 @@ const parseInput = (input: string) => {
     const { how_many, from, to } = groups || {};
     actions.push({
       how_many: Number.parseInt(how_many),
-      from: Number.parseInt(from),
-      to: Number.parseInt(to),
+      from: Number.parseInt(from) - 1,
+      to: Number.parseInt(to) - 1,
     });
   };
   const readBlocks = (line: string) => {
@@ -69,9 +69,35 @@ const parseInput = (input: string) => {
   };
 };
 
-export default function main() {
-  const input = fs.readFileSync("input.txt");
+const simulateActions = (state: string[][], actions: ActionList) => {
+  const modifyState = (state: string[][], action: Action) => {
+    const { how_many, from, to } = action;
+    for (let i = 0; i < how_many; i++) {
+      const removed = state[from].shift();
+      if (!removed) {
+        throw new Error("Action not allowed, trying to move too many items");
+      }
+      state[to].unshift(removed);
+    }
+    return state;
+  };
+  for (const action of actions) {
+    state = modifyState(state, action);
+  }
+  return state;
+};
+
+const getResultFromState = (state: string[][]) =>
+  state
+    .map((stack) => stack.at(0))
+    .map((crate) => crate?.at(1))
+    .reduce((prev, cur) => (cur ? prev + cur : prev), "");
+
+export default function main(filepath: string) {
+  const input = fs.readFileSync(filepath);
   const { entry_state, actions } = parseInput(input.toString());
-  console.log(entry_state, actions);
+  const end_state = simulateActions(entry_state, actions);
+  const result = getResultFromState(end_state);
+  return result;
 }
-main();
+console.log(main("test.txt"));
