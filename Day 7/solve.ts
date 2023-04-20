@@ -152,14 +152,50 @@ const sumSmallDirectories = (fileSystem: FileSystem) => {
       myTotal <= SIZE_THRESHOLD ? myTotal + sumOfSmaller : sumOfSmaller,
     ];
   }
-  return getTotalAndSumSmaller(fileSystem.root)[1];
+  return getTotalAndSumSmaller(fileSystem.root);
 };
 
+const findSmallestBiggerThan = (fileSystem: FileSystem, toRemove: number) => {
+  type TotalSum = number;
+  type SmallestBigger = number;
+  function getTotalAndSmallestBigger(
+    dir: Directory
+  ): [TotalSum, SmallestBigger] {
+    let myTotal = 0;
+    let smallestBigger = Number.MAX_SAFE_INTEGER;
+    for (const node of Object.values(dir.subNodes)) {
+      if (nodeIsDir(node)) {
+        const [total, smallestInSubdir] = getTotalAndSmallestBigger(node);
+        myTotal += total;
+        smallestBigger =
+          smallestInSubdir >= toRemove && smallestInSubdir < smallestBigger
+            ? smallestInSubdir
+            : smallestBigger;
+      } else {
+        // node is file
+        myTotal += node.size;
+      }
+    }
+    return [
+      myTotal,
+      myTotal >= toRemove && smallestBigger > myTotal
+        ? myTotal
+        : smallestBigger,
+    ];
+  }
+  return getTotalAndSmallestBigger(fileSystem.root);
+};
+
+const DISK_SPACE = 70000000;
+const NEEDED_SPACE = 30000000;
 export default function main(filepath: string) {
   const input = fs.readFileSync(filepath);
   const actions = parseInput(input.toString());
   const fileSystem = createFileSystem(actions);
-  const result = sumSmallDirectories(fileSystem);
+  //   const result = sumSmallDirectories(fileSystem)[1];
+  const total = sumSmallDirectories(fileSystem)[0];
+  const toRemove = total - (DISK_SPACE - NEEDED_SPACE);
+  const result = findSmallestBiggerThan(fileSystem, toRemove)[1];
   return result;
 }
 console.log(main("input.txt"));
